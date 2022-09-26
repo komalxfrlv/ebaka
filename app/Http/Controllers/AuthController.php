@@ -3,19 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function user(): JsonResponse
+    {
+        return response()->json(auth()->user());
+    }
+
+    public function register(Request $request): JsonResponse
     {
         $name = $request->name;
+        $surname = $request->surname;
+        $patronymic = $request->patronymic;
+        $phone = $request->phone;
+
         $email = $request->email;
         $password = $request->password;
 
         // Check if field is empty
-        if (empty($name) or empty($email) or empty($password)) {
-            return response()->json(['status' => 'error', 'message' => 'You must fill all the fields']);
+        if (empty($name) or empty($email) or empty($password) or empty($surname) or empty($patronymic) or empty($phone))
+        {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You must fill all the fields'."/".$surname."/".$name."/".$patronymic."/".$password."/".$email."/".$phone."/",
+                'dump' => $request->json()
+            ]);
         }
 
         // Check if email is valid
@@ -36,9 +51,12 @@ class AuthController extends Controller
         // Create new user
         try {
             $user = new User();
-            $user->name = $request->name;
-            $user->email = $request->email;
-            $user->password = app('hash')->make($request->password);
+            $user->name = $name;
+            $user->surname = $surname;
+            $user->patronymic = $patronymic;
+            $user->phone = $phone;
+            $user->email = $email;
+            $user->password = app('hash')->make($password);
 
             if ($user->save()) {
                 return $this->login($request);
@@ -51,16 +69,15 @@ class AuthController extends Controller
     /**
      * Log the user out (Invalidate the token).
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
-    public function logout()
+    public function logout(): JsonResponse
     {
         auth()->logout();
-
         return response()->json(['message' => 'Successfully logged out']);
     }
 
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
         $email = $request->email;
         $password = $request->password;
@@ -84,9 +101,9 @@ class AuthController extends Controller
      *
      * @param string $token
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
-    protected function respondWithToken($token)
+    protected function respondWithToken(string $token): JsonResponse
     {
         return response()->json([
             'access_token' => $token,

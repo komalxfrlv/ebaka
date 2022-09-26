@@ -16,7 +16,12 @@ class PositionController extends Controller
     {
         $headers = ['Content-Type' => 'application/json; charset=utf-8'];
 
-        $tracker = Tracker::all()->where('imei', $imei)->first();
+        $user = auth()->user();
+
+        $tracker = Tracker::all()
+            ->where('imei', $imei)
+            ->where('user_id', $user['id'])
+            ->first();
 
         if ($tracker == null)
             $positions = [];

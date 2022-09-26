@@ -19,7 +19,11 @@ return new class extends Migration
             $table->string('mark');
             $table->string('model');
             $table->string('reg_number');
+            $table->string('color');
             $table->string('vin');
+
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 

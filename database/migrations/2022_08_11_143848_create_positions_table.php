@@ -20,8 +20,9 @@ return new class extends Migration
             $table->double('latitude');
             $table->double('longitude');
 
-            $table->unsignedBigInteger('tracker_id');
+            $table->string('address');
 
+            $table->unsignedBigInteger('tracker_id');
             $table->foreign('tracker_id')->references('id')->on('trackers');
         });
     }

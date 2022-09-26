@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Person;
 use App\Models\Position;
 use App\Models\Tracker;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -14,71 +15,63 @@ use Illuminate\Validation\ValidationException;
 
 class TrackerController extends Controller
 {
-    public function index(int $filter): JsonResponse
+    public function index(): JsonResponse
     {
         $headers = ['Content-Type' => 'application/json; charset=utf-8'];
 
-        if($filter == 1)
-        {
-            $trackers = Tracker::with('responsible')
-                ->with('car')
-                ->with('person')
-                ->with('position')
-                ->orderByDesc('updated_at')
-                ->get()->values();
-        }
-        else if ($filter == 2)
-        {
-            $trackers = Tracker::with('responsible')
-                ->with('car')
-                ->with('person')
-                ->with('position')
-                ->orderByDesc('balance')
-                ->get()->values();
-        }
-        else
-        {
-            $trackers = Tracker::with('responsible')
-                ->with('car')
-                ->with('person')
-                ->with('position')
-                ->orderByDesc('power')
-                ->get()->values();
-        }
+        $user = auth()->user();
 
+        $trackers = Tracker::with('car')
+                ->with('person')
+                ->with('position')
+                ->where('user_id', $user['id'])
+                ->orderByDesc('id')
+                ->get()->values();
 
         return response()->json($trackers, 200, $headers, JSON_UNESCAPED_UNICODE);
     }
 
-    public function show(string $imei): JsonResponse
+    public function show($id): JsonResponse
     {
         $headers = ['Content-Type' => 'application/json; charset=utf-8'];
 
-        $tracker = Tracker::all()->where('imei', $imei)->first();
-
-        $positions = Position::all()->where('tracker_id', $tracker->id)->sortByDesc('id',)->values()->all();
-
-        return response()->json($positions, 200, $headers, JSON_UNESCAPED_UNICODE);
-    }
-
-    public function info(string $imei): JsonResponse
-    {
-        $headers = ['Content-Type' => 'application/json; charset=utf-8'];
+        $user = auth()->user();
 
         $tracker = Tracker::with('responsible')
             ->with('car')
             ->with('person')
-            ->where('imei', $imei)
+            ->where('id', $id)
+            ->where('user_id', $user['id'])
             ->first();
 
         return response()->json($tracker, 200, $headers, JSON_UNESCAPED_UNICODE);
+    }
+
+    public function info($id): JsonResponse
+    {
+        $headers = ['Content-Type' => 'application/json; charset=utf-8'];
+
+        $user = auth()->user();
+
+        $tracker = Tracker::all()
+            ->where('id', $id)
+            ->where('user_id', $user['id'])
+            ->first();
+
+        $positions = Position::all()
+            ->where('tracker_id', $tracker->id)
+            ->sortByDesc('id',)
+            ->values()->all();
+
+        return response()->json($positions, 200, $headers, JSON_UNESCAPED_UNICODE);
     }
 
     public function filters(Request $request): JsonResponse
     {
         $headers = ['Content-Type' => 'application/json; charset=utf-8'];
 
-        $responsible = $request->input('responsible');
+        $user = auth()->user();
+
         $persons = $request->input('persons');
         $cars = $request->input('cars');
         $date_from = $request->input('from');
@@ -86,12 +79,12 @@ class TrackerController extends Controller
 
         $trackers = Tracker::whereHas('positions',
             function ($query) use ($date_to, $date_from) {
-                return $query->whereBetween('created_at', [$date_from, $date_to]);
+                return $query->whereBetween('updated_at', [$date_from, $date_to]);
             })
-            ->with(['responsible', 'person', 'car', 'positions'])
-            ->where(function ($query) use ($responsible, $persons, $cars) {
-                $query->whereIn('responsible_id', $responsible)
-                    ->orWhereIn('person_id', $persons)
+            ->with(['person', 'car', 'positions'])
+            ->where('user_id', $user['id'])
+            ->where(function ($query) use ($persons, $cars) {
+                $query->orWhereIn('person_id', $persons)
                     ->orWhereIn('car_id', $cars);
             })
             ->get();
@@ -105,24 +98,21 @@ class TrackerController extends Controller
     {
         $headers = ['Content-Type' => 'application/json; charset=utf-8'];
 
-
         $this->validate($request, [
             'imei' => 'required',
             'phone' => 'required',
-            'responsible_id' => 'required',
             'tracked' => 'required',
         ]);
 
+        $user = auth()->user();
 
         $tracker = new Tracker();
 
-        $responsible_id = $request->input('responsible_id');
-
         $tracker->imei = $request->input('imei');
         $tracker->phone = $request->input('phone');
-        $tracker->responsible_id = $responsible_id;
-        $tracker->balance = 0;
-        $tracker->power = 0;
+        $tracker->user_id = $user['id'];
+        $tracker->balance = null;
+        $tracker->power = null;
         $tracker->is_charging = false;
 
         if ($request->input('tracked') == 'auto') {
@@ -133,17 +123,50 @@ class TrackerController extends Controller
             $tracker->person_id = $request->input('person_id');
         }
 
-        $person = DB::table('people')->find($responsible_id);
-
-        if($person->is_responsible != true)
-        {
-            DB::table('people')
-                ->where('id', $responsible_id)
-                ->update(['is_responsible' => true]);
-        }
-
         $tracker->save();
 
         return new Response('Трекер успешно добавлен!', Response::HTTP_CREATED, $headers);
+    }
+
+    public function update(Request $request): JsonResponse
+    {
+        $headers = ['Content-Type' => 'application/json; charset=utf-8'];
+
+        $this->validate($request, [
+            'id' => 'required',
+            'imei' => 'required',
+            'phone' => 'required',
+            'tracked' => 'required',
+        ]);
+
+        $success = ['message' => 'Автомобиль успешно отредактирован!'];
+        $error = ['error' => 'Автомобиль не может быть отредактирован'];
+
+        $tracker = Tracker::find($request->input('id'));
+
+        $user = auth()->user();
+
+        if($tracker->user_id == $user['id'])
+        {
+            $tracker->imei = $request->input('imei');
+            $tracker->phone = $request->input('phone');
+
+
+            if ($request->input('tracked') == 'auto') {
+                $tracker->person_id = null;
+                $tracker->car_id = $request->input('car_id');
+            } else {
+                $tracker->car_id = null;
+                $tracker->person_id = $request->input('person_id');
+            }
+
+            $tracker->save();
+
+            return response()->json($success, 200, $headers, JSON_UNESCAPED_UNICODE);
+        } else {
+            return response()->json($error, 200, $headers, JSON_UNESCAPED_UNICODE);
+        }
+
+
     }
 }

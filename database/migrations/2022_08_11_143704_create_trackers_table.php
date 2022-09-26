@@ -19,17 +19,17 @@ return new class extends Migration
 
             $table->string('imei')->unique();
             $table->string('phone')->unique();
-            $table->double('balance');
-            $table->double('power');
+            $table->double('balance')->nullable();
+            $table->double('power')->nullable();
             $table->boolean('is_charging');
 
             $table->unsignedBigInteger('car_id')->nullable();
             $table->unsignedBigInteger('person_id')->nullable();
-            $table->unsignedBigInteger('responsible_id');
+            $table->unsignedBigInteger('user_id');
 
             $table->foreign('car_id')->references('id')->on('cars');
             $table->foreign('person_id')->references('id')->on('people');
-            $table->foreign('responsible_id')->references('id')->on('people');
+            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 

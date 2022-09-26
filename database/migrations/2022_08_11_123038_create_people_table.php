@@ -18,8 +18,12 @@ return new class extends Migration
             $table->timestamps();
             $table->string('name');
             $table->string('surname');
+            $table->string('patronymic');
             $table->string('phone');
-            $table->boolean('is_responsible')->default(0);
+            $table->string('address');
+
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 
