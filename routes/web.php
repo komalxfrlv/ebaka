@@ -22,6 +22,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->post('/register', 'AuthController@register');
     $router->post('/login', 'AuthController@login');
     $router->post('/user', 'AuthController@user');
+    $router->post('/hardware-data', 'PositionController@hardware');
 
     $router->group(['middleware' => 'auth'], function () use ($router) {
         $router->post('/logout', 'AuthController@logout');
@@ -49,16 +50,13 @@ $router->group(['prefix' => 'api'], function () use ($router) {
             $router->post('/', 'TrackerController@store');
             $router->put('/', 'TrackerController@update');
 
-            $router->get('/imei-info/{imei}', 'TrackerController@info');
+            $router->get('/positions/{id}', 'TrackerController@positions');
             $router->post('/filters', 'TrackerController@filters');
-
-            $router->post('/data', 'TrackerController@hardware');
         });
 
         $router->group(['prefix' => 'positions'], function () use ($router) {
             // Positions
             $router->get('/imei/{imei}', 'PositionController@show');
-            $router->post('/hardware', 'PositionController@hardware');
         });
     });
 });

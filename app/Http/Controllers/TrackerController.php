@@ -2,16 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Person;
 use App\Models\Position;
 use App\Models\Tracker;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 
 class TrackerController extends Controller
 {
@@ -37,9 +32,9 @@ class TrackerController extends Controller
 
         $user = auth()->user();
 
-        $tracker = Tracker::with('responsible')
-            ->with('car')
+        $tracker = Tracker::with('car')
             ->with('person')
+            ->with('positions')
             ->where('id', $id)
             ->where('user_id', $user['id'])
             ->first();
@@ -47,57 +42,10 @@ class TrackerController extends Controller
         return response()->json($tracker, 200, $headers, JSON_UNESCAPED_UNICODE);
     }
 
-    public function info($id): JsonResponse
-    {
-        $headers = ['Content-Type' => 'application/json; charset=utf-8'];
-
-        $user = auth()->user();
-
-        $tracker = Tracker::all()
-            ->where('id', $id)
-            ->where('user_id', $user['id'])
-            ->first();
-
-        $positions = Position::all()
-            ->where('tracker_id', $tracker->id)
-            ->sortByDesc('id',)
-            ->values()->all();
-
-        return response()->json($positions, 200, $headers, JSON_UNESCAPED_UNICODE);
-    }
-
-    public function filters(Request $request): JsonResponse
-    {
-        $headers = ['Content-Type' => 'application/json; charset=utf-8'];
-
-        $user = auth()->user();
-
-        $persons = $request->input('persons');
-        $cars = $request->input('cars');
-        $date_from = $request->input('from');
-        $date_to = $request->input('to');
-
-        $trackers = Tracker::whereHas('positions',
-            function ($query) use ($date_to, $date_from) {
-                return $query->whereBetween('updated_at', [$date_from, $date_to]);
-            })
-            ->with(['person', 'car', 'positions'])
-            ->where('user_id', $user['id'])
-            ->where(function ($query) use ($persons, $cars) {
-                $query->orWhereIn('person_id', $persons)
-                    ->orWhereIn('car_id', $cars);
-            })
-            ->get();
-        return response()->json($trackers, 200, $headers, JSON_UNESCAPED_UNICODE);
-    }
-
-    /**
-     * @throws ValidationException
-     */
     public function store(Request $request): Response
     {
         $headers = ['Content-Type' => 'application/json; charset=utf-8'];
-
+        $request->toArray();
         $this->validate($request, [
             'imei' => 'required',
             'phone' => 'required',
@@ -166,7 +114,59 @@ class TrackerController extends Controller
         } else {
             return response()->json($error, 200, $headers, JSON_UNESCAPED_UNICODE);
         }
-
-
     }
+
+    /******************************************************************************************************************
+     ******************************************************************************************************************
+     *****************************************************************************************************************/
+
+    public function positions($id): JsonResponse
+    {
+        $headers = ['Content-Type' => 'application/json; charset=utf-8'];
+
+        $user = auth()->user();
+
+        $tracker = Tracker::all()
+            ->where('id', $id)
+            ->where('user_id', $user['id'])
+            ->first();
+
+        $positions = Position::all()
+            ->where('tracker_id', $tracker->id)
+            ->sortByDesc('id',)
+            ->values()->all();
+
+        return response()->json($positions, 200, $headers, JSON_UNESCAPED_UNICODE);
+    }
+
+    public function filters(Request $request): JsonResponse
+    {
+        $headers = ['Content-Type' => 'application/json; charset=utf-8'];
+
+        $user = auth()->user();
+
+        $persons = $request->input('workersSelected');
+        $cars = $request->input('carsSelected');
+        $date_from = $request->input('fromDate');
+        $date_to = $request->input('toDate');
+
+        $trackers = Tracker::whereHas('positions',
+            function ($query) use ($request, $date_to, $date_from) {
+                if($request->input('selectedCity') !== null)
+                    return $query->whereBetween('updated_at', [$date_from, $date_to])
+                        ->where('address', 'like', '%' . $request->input('selectedCity') . '%');
+                else
+                    return $query->whereBetween('updated_at', [$date_from, $date_to]);
+            })
+            ->with(['person', 'car', 'positions'])
+            ->where('user_id', $user['id'])
+            ->where(function ($query) use ($persons, $cars) {
+                $query
+                    ->orWhereIn('car_id', $cars)
+                    ->orWhereIn('person_id', $persons);
+            })
+            ->get();
+        return response()->json($trackers, 200, $headers, JSON_UNESCAPED_UNICODE);
+    }
+
 }

@@ -6,10 +6,13 @@
     "type": "project",
     "require": {
         "php": "^7.3|^8.0",
+        "ext-json": "*",
         "flipbox/lumen-generator": "^8.2",
+        "guzzlehttp/guzzle": "^7.5",
+        "hflabs/dadata": "^22.3",
         "laravel/lumen-framework": "^8.0",
         "tymon/jwt-auth": "^1.0",
-      "ext-json": "*"
+      "ext-curl": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

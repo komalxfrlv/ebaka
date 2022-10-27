@@ -19,11 +19,6 @@ class Tracker extends Model
         'responsible_id'
     ];
 
-    public function responsible(): HasOne
-    {
-        return $this->hasOne(Person::class, 'id', 'responsible_id');
-    }
-
     public function person(): HasOne
     {
         return $this->hasOne(Person::class, 'id', 'person_id');
@@ -36,7 +31,7 @@ class Tracker extends Model
 
     public function position(): HasMany
     {
-        return $this->hasMany(Position::class, 'tracker_id', 'id')->latest()->limit(1);
+        return $this->hasMany(Position::class, 'tracker_id', 'id')->latest();
     }
 
     public function positions(): HasMany
