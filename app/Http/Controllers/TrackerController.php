@@ -154,10 +154,6 @@ class TrackerController extends Controller
         $trackers = Tracker::with(['person', 'car'])
             ->with(['positions' =>
                 function ($query) use ($request, $date_to, $date_from, $selectedCity) {
-                    if($selectedCity !== null)
-                        return $query->whereBetween('created_at', [$date_from, $date_to])
-                            ->where('address', 'like', '%' . $selectedCity . '%');
-                    else
                         return $query->whereBetween('created_at', [$date_from, $date_to]);
                 }
             ])
