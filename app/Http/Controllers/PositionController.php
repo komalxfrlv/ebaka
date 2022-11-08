@@ -51,10 +51,12 @@ class PositionController extends Controller
         $latitude = doubleval($request->input('latitude'));
         $longitude = doubleval($request->input('longitude'));
 
+
         DB::table('trackers')->where('imei', $imei)->update([
             'balance' => $balance,
             'power' => $charge,
-            'is_charging' => $is_charging
+            'is_charging' => $is_charging,
+            'updated_at' => (new \DateTime())
         ]);
 
         $address = null;

@@ -46,12 +46,16 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         $router->group(['prefix' => 'trackers'], function () use ($router) {
             // Trackers
             $router->get('/', 'TrackerController@index');
-            $router->get('/{id}', 'TrackerController@show');
+            $router->get('/show/{id}', 'TrackerController@show');
             $router->post('/', 'TrackerController@store');
             $router->put('/', 'TrackerController@update');
 
             $router->get('/positions/{id}', 'TrackerController@positions');
             $router->post('/filters', 'TrackerController@filters');
+            $router->get('/low-battery', 'TrackerController@getLowBatteryTrackers');
+            $router->get('/low-balance', 'TrackerController@getLowBalanceTrackers');
+            $router->get('/now-offline', 'TrackerController@getOfflineNowTrackers');
+            $router->post('/now-in-city', 'TrackerController@nowInCity');
         });
 
         $router->group(['prefix' => 'positions'], function () use ($router) {
