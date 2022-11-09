@@ -163,7 +163,7 @@ class PositionController extends Controller
                     $url = "https://nominatim.openstreetmap.org/search.php?q=".$latitude.",".$longitude."&polygon_geojson=1&format=json&addressdetails=1";
 
                     $client = new Client();
-                    $response = $client->request('GET', $url, ['proxy' => 'http://proxy.k-telecom.org:3128']);
+                    $response = $client->request('GET', $url);
 
                     $address = json_decode($response->getBody()->getContents())[0]->address;
 
