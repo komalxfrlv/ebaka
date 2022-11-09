@@ -79,7 +79,11 @@ class PositionController extends Controller
                 $url = "https://nominatim.openstreetmap.org/search.php?q=".$latitude.",".$longitude."&polygon_geojson=1&format=json&addressdetails=1";
 
                 $client = new Client();
-                $response = $client->request('GET', $url, ['proxy' => 'http://proxy.k-telecom.org:3128']);
+
+                if(env('APP_DEPLOY') === 'DEV')
+                    $response = $client->request('GET', $url, ['proxy' => 'http://proxy.k-telecom.org:3128']);
+                else
+                    $response = $client->request('GET', $url);
 
                 $address = json_decode($response->getBody()->getContents())[0]->address;
 
@@ -163,7 +167,11 @@ class PositionController extends Controller
                     $url = "https://nominatim.openstreetmap.org/search.php?q=".$latitude.",".$longitude."&polygon_geojson=1&format=json&addressdetails=1";
 
                     $client = new Client();
-                    $response = $client->request('GET', $url);
+
+                    if(env('APP_DEPLOY') === 'DEV')
+                        $response = $client->request('GET', $url, ['proxy' => 'http://proxy.k-telecom.org:3128']);
+                    else
+                        $response = $client->request('GET', $url);
 
                     $address = json_decode($response->getBody()->getContents())[0]->address;
 
