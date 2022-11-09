@@ -23,6 +23,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->post('/login', 'AuthController@login');
     $router->post('/user', 'AuthController@user');
     $router->post('/hardware-data', 'PositionController@hardware');
+    $router->post('/side-tracker', 'PositionController@getDataFromSideTracker');
 
     $router->group(['middleware' => 'auth'], function () use ($router) {
         $router->post('/logout', 'AuthController@logout');

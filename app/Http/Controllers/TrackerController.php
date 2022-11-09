@@ -243,5 +243,4 @@ class TrackerController extends Controller
 
         return response()->json($trackers, 200, $headers, JSON_UNESCAPED_UNICODE);
     }
-
 }
